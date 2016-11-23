@@ -1,0 +1,60 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: ccatlett2000
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mariadb
+        version: 10.1.19
+      annotations:
+        pod.alpha.kubernetes.io/init-containers: '[
+          {
+            "name": "init",
+            "image": "ccatlett2000/mafiascum-init:1.0.0",
+            "volumeMounts": [
+              {
+                "name": "init",
+                "mountPath": "/mnt/init"
+              }
+            ]
+          }
+        ]'
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:10.1.19
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: examplepass
+        - name: MYSQL_DATABASE
+          value: ms_phpbb3
+        volumeMounts:
+        - name: init
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: ccatlett2000
+  labels:
+    app: mariadb
+    version: 10.1.19
+spec:
+  ports:
+  - port: 3306
+    protocol: TCP
+    name: sql
+  selector:
+    app: mariadb
+    version: 10.1.19
